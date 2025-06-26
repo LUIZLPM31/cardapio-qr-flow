@@ -1,12 +1,158 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import Header from "@/components/Header";
+import CategoryFilter from "@/components/CategoryFilter";
+import MenuItem, { MenuItemType } from "@/components/MenuItem";
+import Cart from "@/components/Cart";
+import { menuItems, categories } from "@/data/menuData";
+import { useToast } from "@/hooks/use-toast";
+
+interface CartItem extends MenuItemType {
+  quantity: number;
+}
 
 const Index = () => {
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { toast } = useToast();
+
+  const filteredItems = activeCategory === "all" 
+    ? menuItems 
+    : menuItems.filter(item => item.category === activeCategory);
+
+  const getItemQuantity = (itemId: string) => {
+    const cartItem = cartItems.find(item => item.id === itemId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
+  const addToCart = (item: MenuItemType) => {
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(cartItem => cartItem.id === item.id);
+      
+      if (existingItem) {
+        return prevItems.map(cartItem =>
+          cartItem.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      } else {
+        return [...prevItems, { ...item, quantity: 1 }];
+      }
+    });
+
+    toast({
+      title: "Item adicionado!",
+      description: `${item.name} foi adicionado ao carrinho`,
+      duration: 2000,
+    });
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(item => item.id === itemId);
+      
+      if (existingItem && existingItem.quantity === 1) {
+        return prevItems.filter(item => item.id !== itemId);
+      } else {
+        return prevItems.map(item =>
+          item.id === itemId
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        );
+      }
+    });
+  };
+
+  const updateCartQuantity = (itemId: string, quantity: number) => {
+    if (quantity === 0) {
+      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    } else {
+      setCartItems(prevItems =>
+        prevItems.map(item =>
+          item.id === itemId ? { ...item, quantity } : item
+        )
+      );
+    }
+  };
+
+  const handleCheckout = () => {
+    toast({
+      title: "Pedido em processamento!",
+      description: "Redirecionando para pagamento...",
+      duration: 3000,
+    });
+    
+    // Aqui seria implementado o fluxo de pagamento
+    console.log("Processando pedido:", cartItems);
+  };
+
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header 
+        cartItemCount={cartItemCount}
+        onCartClick={() => setIsCartOpen(true)}
+      />
+      
+      <CategoryFilter
+        categories={categories}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+      />
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-cardapio-text mb-2">
+            {activeCategory === "all" ? "Nosso Cardápio" : 
+             categories.find(cat => cat.id === activeCategory)?.name}
+          </h2>
+          <p className="text-gray-600">
+            Escolha seus pratos favoritos e monte seu pedido
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredItems.map((item) => (
+            <MenuItem
+              key={item.id}
+              item={item}
+              quantity={getItemQuantity(item.id)}
+              onAdd={addToCart}
+              onRemove={removeFromCart}
+            />
+          ))}
+        </div>
+
+        {filteredItems.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">
+              Nenhum item encontrado nesta categoria.
+            </p>
+          </div>
+        )}
+      </main>
+
+      <Cart
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        onUpdateQuantity={updateCartQuantity}
+        onCheckout={handleCheckout}
+      />
+
+      {cartItemCount > 0 && !isCartOpen && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-6 right-6 bg-cardapio-orange hover:bg-orange-600 text-white rounded-full p-4 shadow-lg z-40 animate-scale-in"
+        >
+          <div className="flex items-center space-x-2">
+            <span className="font-bold">{cartItemCount}</span>
+            <span className="hidden sm:inline">itens</span>
+          </div>
+        </button>
+      )}
     </div>
   );
 };
