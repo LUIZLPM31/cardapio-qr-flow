@@ -1,5 +1,5 @@
 
-import { ShoppingCart, QrCode } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
@@ -12,8 +12,12 @@ const Header = ({ cartItemCount, onCartClick }: HeaderProps) => {
     <header className="sticky top-0 z-50 bg-cardapio-green shadow-lg">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-            <QrCode className="w-6 h-6 text-cardapio-green" />
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1">
+            <img 
+              src="/lovable-uploads/e555a8e8-9e31-48ec-ab33-e0365109314d.png" 
+              alt="CardápioGO Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">CardápioGO</h1>
