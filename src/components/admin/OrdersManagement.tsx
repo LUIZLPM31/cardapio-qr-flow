@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,13 @@ const OrdersManagement = () => {
 
       if (error) throw error;
       
-      setOrders(data || []);
+      // Cast the status to the correct type
+      const ordersWithTypedStatus = data?.map(order => ({
+        ...order,
+        status: order.status as Order['status']
+      })) || [];
+      
+      setOrders(ordersWithTypedStatus);
     } catch (error) {
       console.error('Erro ao buscar pedidos:', error);
       toast({
