@@ -31,7 +31,7 @@ export const menuItems: MenuItemType[] = [
     name: "Chicken Burger",
     description: "Peito de frango grelhado, queijo mozzarella, alface, tomate e maionese temperada",
     price: 24.90,
-    image: "https://images.unsplash.com/photo-1606755962773-d324e2dabd81?w=500&h=300&fit=crop",
+    image: "/lovable-uploads/105f5ac8-9a6b-4467-bbb9-02dcb5576bfd.png",
     category: "burgers"
   },
   {
@@ -73,7 +73,7 @@ export const menuItems: MenuItemType[] = [
     name: "Água Mineral",
     description: "Água mineral sem gás - 500ml",
     price: 3.50,
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&h=300&fit=crop",
+    image: "/lovable-uploads/2f067668-f8fd-4c70-94ed-77ad659b871e.png",
     category: "drinks"
   },
 
