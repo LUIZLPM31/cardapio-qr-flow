@@ -26,7 +26,7 @@ const Header = ({
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button onClick={handleAdminClick} variant="outline" size="sm" className="text-cardapio-green border-white bg-accent-DEFAULT">
+          <Button onClick={handleAdminClick} variant="outline" size="sm" className="border-white bg-accent-foreground text-accent-DEFAULT">
             <Settings className="w-4 h-4 mr-2" />
             Admin
           </Button>
