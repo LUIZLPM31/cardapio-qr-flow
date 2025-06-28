@@ -31,7 +31,7 @@ const Header = ({
             Admin
           </Button>
           
-          <Button onClick={onCartClick} variant="outline" size="sm" className="relative bg-white text-cardapio-green hover:bg-gray-100 border-white">
+          <Button onClick={onCartClick} variant="outline" size="sm" className="relative border-white text-cardapio-white bg-cardapio-orange">
             <ShoppingCart className="w-4 h-4 mr-2" />
             Carrinho
             {cartItemCount > 0 && <span className="absolute -top-2 -right-2 bg-cardapio-orange text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
