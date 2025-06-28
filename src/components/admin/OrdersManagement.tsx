@@ -1,44 +1,109 @@
 
-import { useState } from "react";
-import { Clock, CheckCircle, XCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface OrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  menu_item: {
+    name: string;
+  };
+}
 
 interface Order {
   id: string;
-  customerName: string;
-  items: string[];
+  customer_name: string;
+  customer_phone: string | null;
   total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'delivered';
-  date: string;
+  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  created_at: string;
+  order_items: OrderItem[];
 }
 
 const OrdersManagement = () => {
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "001",
-      customerName: "João Silva",
-      items: ["Hambúrguer Clássico", "Batata Frita", "Refrigerante"],
-      total: 35.90,
-      status: "pending",
-      date: "2024-06-26 14:30"
-    },
-    {
-      id: "002",  
-      customerName: "Maria Santos",
-      items: ["Pizza Margherita", "Suco Natural"],
-      total: 42.00,
-      status: "preparing",
-      date: "2024-06-26 14:15"
-    }
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
-    setOrders(orders.map(order => 
-      order.id === orderId 
-        ? { ...order, status: newStatus }
-        : order
-    ));
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            quantity,
+            price,
+            menu_item:menu_items (name)
+          )
+        `)
+        .neq('status', 'delivered')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar pedidos:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os pedidos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    
+    // Configurar atualização em tempo real
+    const channel = supabase
+      .channel('orders-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `Pedido marcado como ${getStatusText(newStatus).toLowerCase()}`,
+      });
+
+      fetchOrders();
+    } catch (error) {
+      console.error('Erro ao atualizar pedido:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o pedido",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: Order['status']) => {
@@ -47,6 +112,7 @@ const OrdersManagement = () => {
       case 'preparing': return 'bg-blue-100 text-blue-700';
       case 'ready': return 'bg-green-100 text-green-700';
       case 'delivered': return 'bg-gray-100 text-gray-700';
+      case 'cancelled': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -57,17 +123,40 @@ const OrdersManagement = () => {
       case 'preparing': return 'Preparando';
       case 'ready': return 'Pronto';
       case 'delivered': return 'Entregue';
+      case 'cancelled': return 'Cancelado';
       default: return 'Desconhecido';
     }
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('pt-BR');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-lg">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-cardapio-text">Pedidos Pendentes</h2>
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4" />
-          <span>Atualizado em tempo real</span>
+        <div className="flex items-center space-x-4">
+          <Button
+            onClick={fetchOrders}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Atualizar
+          </Button>
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <Clock className="w-4 h-4" />
+            <span>Atualizado automaticamente</span>
+          </div>
         </div>
       </div>
 
@@ -77,9 +166,14 @@ const OrdersManagement = () => {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">Pedido #{order.id}</CardTitle>
-                  <p className="text-gray-600">{order.customerName}</p>
-                  <p className="text-sm text-gray-500">{order.date}</p>
+                  <CardTitle className="text-lg">
+                    Pedido #{order.id.slice(0, 8)}
+                  </CardTitle>
+                  <p className="text-gray-600">{order.customer_name}</p>
+                  {order.customer_phone && (
+                    <p className="text-sm text-gray-500">{order.customer_phone}</p>
+                  )}
+                  <p className="text-sm text-gray-500">{formatDate(order.created_at)}</p>
                 </div>
                 <div className="text-right">
                   <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
@@ -95,8 +189,10 @@ const OrdersManagement = () => {
               <div className="mb-4">
                 <h4 className="font-medium mb-2">Itens do pedido:</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  {order.items.map((item, index) => (
-                    <li key={index}>• {item}</li>
+                  {order.order_items.map((item) => (
+                    <li key={item.id}>
+                      • {item.quantity}x {item.menu_item.name} - R$ {item.price.toFixed(2)}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -131,6 +227,7 @@ const OrdersManagement = () => {
                   </Button>
                 )}
                 <Button
+                  onClick={() => updateOrderStatus(order.id, 'cancelled')}
                   variant="outline"
                   size="sm"
                   className="text-red-600 hover:text-red-700"
@@ -143,6 +240,14 @@ const OrdersManagement = () => {
           </Card>
         ))}
       </div>
+
+      {orders.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">
+            Nenhum pedido pendente no momento.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

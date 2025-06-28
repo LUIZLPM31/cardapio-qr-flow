@@ -1,54 +1,129 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import PromotionModal from "./PromotionModal";
 
 interface Promotion {
   id: string;
   code: string;
-  discount: number;
-  validity: string;
-  isActive: boolean;
+  discount_percentage: number;
+  valid_until: string;
+  is_active: boolean;
 }
 
 const PromotionsManagement = () => {
-  const [promotions, setPromotions] = useState<Promotion[]>([
-    {
-      id: "1",
-      code: "PRIMEIRACOMPRA",
-      discount: 10,
-      validity: "2024-12-31",
-      isActive: true
-    },
-    {
-      id: "2",
-      code: "CLIENTE20",
-      discount: 20,
-      validity: "2024-06-30",
-      isActive: false
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
+  const { toast } = useToast();
+
+  const fetchPromotions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setPromotions(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar promoções:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as promoções",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
 
   const handleAddPromotion = () => {
-    console.log("Adicionar nova promoção");
+    setEditingPromotion(null);
+    setIsModalOpen(true);
   };
 
-  const handleEditPromotion = (promotionId: string) => {
-    console.log("Editar promoção:", promotionId);
+  const handleEditPromotion = (promotion: Promotion) => {
+    setEditingPromotion(promotion);
+    setIsModalOpen(true);
   };
 
-  const handleDeletePromotion = (promotionId: string) => {
-    setPromotions(promotions.filter(promo => promo.id !== promotionId));
+  const handleDeletePromotion = async (promotionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .delete()
+        .eq('id', promotionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Promoção removida com sucesso",
+      });
+
+      fetchPromotions();
+    } catch (error) {
+      console.error('Erro ao remover promoção:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover a promoção",
+        variant: "destructive",
+      });
+    }
   };
 
-  const togglePromotionStatus = (promotionId: string) => {
-    setPromotions(promotions.map(promo => 
-      promo.id === promotionId 
-        ? { ...promo, isActive: !promo.isActive }
-        : promo
-    ));
+  const togglePromotionStatus = async (promotionId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .update({ is_active: !currentStatus })
+        .eq('id', promotionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `Promoção ${!currentStatus ? 'ativada' : 'desativada'} com sucesso`,
+      });
+
+      fetchPromotions();
+    } catch (error) {
+      console.error('Erro ao alterar status da promoção:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o status da promoção",
+        variant: "destructive",
+      });
+    }
   };
+
+  const handleSavePromotion = () => {
+    fetchPromotions();
+    setIsModalOpen(false);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-lg">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -73,11 +148,11 @@ const PromotionsManagement = () => {
                   {promotion.code}
                 </CardTitle>
                 <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  promotion.isActive 
+                  promotion.is_active 
                     ? "bg-green-100 text-green-700" 
                     : "bg-red-100 text-red-700"
                 }`}>
-                  {promotion.isActive ? "Ativa" : "Inativa"}
+                  {promotion.is_active ? "Ativa" : "Inativa"}
                 </div>
               </div>
             </CardHeader>
@@ -86,24 +161,24 @@ const PromotionsManagement = () => {
                 <div>
                   <p className="text-sm text-gray-600">Desconto</p>
                   <p className="text-xl font-bold text-cardapio-green">
-                    {promotion.discount}%
+                    {promotion.discount_percentage}%
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Válido até</p>
-                  <p className="font-medium">{promotion.validity}</p>
+                  <p className="font-medium">{formatDate(promotion.valid_until)}</p>
                 </div>
                 <div className="flex space-x-2 pt-2">
                   <Button
-                    onClick={() => togglePromotionStatus(promotion.id)}
+                    onClick={() => togglePromotionStatus(promotion.id, promotion.is_active)}
                     variant="outline"
                     size="sm"
                     className="flex-1"
                   >
-                    {promotion.isActive ? "Desativar" : "Ativar"}
+                    {promotion.is_active ? "Desativar" : "Ativar"}
                   </Button>
                   <Button
-                    onClick={() => handleEditPromotion(promotion.id)}
+                    onClick={() => handleEditPromotion(promotion)}
                     variant="outline"
                     size="sm"
                   >
@@ -123,6 +198,21 @@ const PromotionsManagement = () => {
           </Card>
         ))}
       </div>
+
+      {promotions.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">
+            Nenhuma promoção encontrada. Crie sua primeira promoção!
+          </p>
+        </div>
+      )}
+
+      <PromotionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        promotion={editingPromotion}
+        onSave={handleSavePromotion}
+      />
     </div>
   );
 };

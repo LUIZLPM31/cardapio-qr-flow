@@ -1,28 +1,108 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { menuItems } from "@/data/menuData";
-import { MenuItemType } from "@/components/MenuItem";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import MenuItemModal from "./MenuItemModal";
+
+interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string | null;
+  category_id: string;
+  is_available: boolean;
+  category?: {
+    name: string;
+  };
+}
 
 const MenuManagement = () => {
-  const [items, setItems] = useState<MenuItemType[]>(menuItems);
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const { toast } = useToast();
+
+  const fetchMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select(`
+          *,
+          category:categories(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setItems(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar itens:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os itens do menu",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
 
   const handleAddItem = () => {
-    console.log("Adicionar novo item");
-    // Implementar modal para adicionar item
+    setEditingItem(null);
+    setIsModalOpen(true);
   };
 
-  const handleEditItem = (itemId: string) => {
-    console.log("Editar item:", itemId);
-    // Implementar modal para editar item
+  const handleEditItem = (item: MenuItem) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    setItems(items.filter(item => item.id !== itemId));
-    console.log("Item removido:", itemId);
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Item removido com sucesso",
+      });
+
+      fetchMenuItems();
+    } catch (error) {
+      console.error('Erro ao remover item:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o item",
+        variant: "destructive",
+      });
+    }
   };
+
+  const handleSaveItem = () => {
+    fetchMenuItems();
+    setIsModalOpen(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-lg">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -40,15 +120,28 @@ const MenuManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {items.map((item) => (
           <Card key={item.id} className="overflow-hidden">
-            <div className="aspect-video relative">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-video relative bg-gray-200">
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                  Sem imagem
+                </div>
+              )}
             </div>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{item.name}</CardTitle>
+              <CardTitle className="text-lg flex items-center justify-between">
+                {item.name}
+                {!item.is_available && (
+                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                    Indisponível
+                  </span>
+                )}
+              </CardTitle>
               <p className="text-sm text-gray-600">{item.description}</p>
             </CardHeader>
             <CardContent>
@@ -57,12 +150,12 @@ const MenuManagement = () => {
                   R$ {item.price.toFixed(2)}
                 </span>
                 <span className="text-sm bg-gray-100 px-2 py-1 rounded">
-                  {item.category}
+                  {item.category?.name || 'Sem categoria'}
                 </span>
               </div>
               <div className="flex space-x-2">
                 <Button
-                  onClick={() => handleEditItem(item.id)}
+                  onClick={() => handleEditItem(item)}
                   variant="outline"
                   size="sm"
                   className="flex-1"
@@ -84,6 +177,21 @@ const MenuManagement = () => {
           </Card>
         ))}
       </div>
+
+      {items.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">
+            Nenhum item encontrado. Adicione o primeiro item ao seu cardápio!
+          </p>
+        </div>
+      )}
+
+      <MenuItemModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        item={editingItem}
+        onSave={handleSaveItem}
+      />
     </div>
   );
 };
