@@ -8,6 +8,7 @@ import PromotionsManagement from "@/components/admin/PromotionsManagement";
 import OrdersManagement from "@/components/admin/OrdersManagement";
 import ReportsSection from "@/components/admin/ReportsSection";
 import SettingsSection from "@/components/admin/SettingsSection";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 type AdminSection = 'menu' | 'promotions' | 'orders' | 'reports' | 'settings';
 
@@ -33,18 +34,20 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader />
-      <div className="flex">
-        <AdminSidebar 
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
-        <main className="flex-1 p-6">
-          {renderActiveSection()}
-        </main>
+    <ProtectedRoute requireAdmin={true}>
+      <div className="min-h-screen bg-gray-50">
+        <AdminHeader />
+        <div className="flex">
+          <AdminSidebar 
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
+          <main className="flex-1 p-6">
+            {renderActiveSection()}
+          </main>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 

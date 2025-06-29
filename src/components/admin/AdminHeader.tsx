@@ -1,11 +1,31 @@
 
 import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminHeader = () => {
-  const handleLogout = () => {
-    // Implementar logout aqui
-    console.log("Logout executado");
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error("Erro no logout:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível fazer logout.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -28,7 +48,7 @@ const AdminHeader = () => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <User className="w-4 h-4" />
-            <span className="text-sm">Administrador</span>
+            <span className="text-sm">{user?.email || 'Administrador'}</span>
           </div>
           <Button
             onClick={handleLogout}
