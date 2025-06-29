@@ -9,9 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("adm@adm.com");
+  const [password, setPassword] = useState("1234");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -62,6 +63,63 @@ const Login = () => {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Conta criada com sucesso",
+          description: "Verifique seu email para confirmar a conta.",
+        });
+        
+        // If this is the admin email, update role immediately
+        if (email === "adm@adm.com") {
+          setTimeout(async () => {
+            try {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ role: 'admin' })
+                .eq('id', data.user!.id);
+
+              if (updateError) {
+                console.error('Erro ao definir papel de admin:', updateError);
+              } else {
+                toast({
+                  title: "Papel de admin definido",
+                  description: "Você pode fazer login como administrador agora.",
+                });
+              }
+            } catch (err) {
+              console.error('Erro ao atualizar perfil:', err);
+            }
+          }, 2000);
+        }
+        
+        setIsSignUp(false);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro no cadastro",
+        description: error.message || "Ocorreu um erro ao criar a conta.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
@@ -74,20 +132,20 @@ const Login = () => {
             />
           </div>
           <CardTitle className="text-2xl font-bold text-cardapio-text">
-            Login Administrativo
+            {isSignUp ? 'Criar Conta Admin' : 'Login Administrativo'}
           </CardTitle>
           <p className="text-gray-600">
-            Acesse o painel de controle do CardápioGO
+            {isSignUp ? 'Crie sua conta de administrador' : 'Acesse o painel de controle do CardápioGO'}
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@cardapiogo.com"
+                placeholder="adm@adm.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -98,7 +156,7 @@ const Login = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Digite sua senha"
+                placeholder="1234"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -109,8 +167,19 @@ const Login = () => {
               className="w-full bg-cardapio-green hover:bg-green-700"
               disabled={loading}
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? "Processando..." : (isSignUp ? "Criar Conta" : "Entrar")}
             </Button>
+            
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-cardapio-green"
+              >
+                {isSignUp ? "Já tem conta? Fazer login" : "Primeira vez? Criar conta admin"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
