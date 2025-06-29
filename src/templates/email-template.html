@@ -1,0 +1,252 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{TITLE}} - CardápioGO</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Reset styles */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        /* Client-specific styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #f4f4f4;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+
+        .header {
+            background-color: #059669;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: inline-block;
+            padding: 10px;
+        }
+
+        .logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+        }
+
+        .header p {
+            color: #dcfce7;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .content {
+            padding: 40px 30px;
+            background-color: #ffffff;
+        }
+
+        .content h2 {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .content-text {
+            color: #4b5563;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .content-text ul {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        .content-text li {
+            margin-bottom: 8px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #059669;
+            color: #ffffff;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .cta-button:hover {
+            background-color: #047857;
+        }
+
+        .order-details {
+            background-color: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .order-details h3 {
+            margin: 0 0 10px 0;
+            color: #1f2937;
+        }
+
+        .promo-box {
+            background-color: #fef3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px dashed #f59e0b;
+        }
+
+        .promo-box h3 {
+            margin: 0 0 10px 0;
+            color: #92400e;
+            font-size: 20px;
+        }
+
+        .promo-box p {
+            margin: 0;
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .warning-box {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #fef3cd;
+            border-radius: 6px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .footer p {
+            margin: 0 0 10px 0;
+        }
+
+        .footer-main {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .footer-disclaimer {
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px !important;
+            }
+            
+            .header h1 {
+                font-size: 24px !important;
+            }
+            
+            .content h2 {
+                font-size: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header com Logo -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://zksgfrsmdxijulhfrgpb.supabase.co/storage/v1/object/public/uploads/e555a8e8-9e31-48ec-ab33-e0365109314d.png" alt="CardápioGO Logo" class="logo">
+            </div>
+            <h1>CardápioGO</h1>
+            <p>Seu cardápio digital em tempo real</p>
+        </div>
+
+        <!-- Conteúdo Principal -->
+        <div class="content">
+            <h2>{{TITLE}}</h2>
+            
+            <div class="content-text">
+                {{CONTENT}}
+            </div>
+
+            <!-- Botão CTA (opcional) -->
+            {{#BUTTON_TEXT}}
+            <div class="button-container">
+                <a href="{{BUTTON_URL}}" class="cta-button">{{BUTTON_TEXT}}</a>
+            </div>
+            {{/BUTTON_TEXT}}
+        </div>
+
+        <!-- Rodapé -->
+        <div class="footer">
+            <p class="footer-main">{{FOOTER_TEXT}}</p>
+            <p class="footer-disclaimer">Este email foi enviado automaticamente. Por favor, não responda.</p>
+        </div>
+    </div>
+</body>
+</html>
