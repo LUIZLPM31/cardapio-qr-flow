@@ -45,6 +45,29 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
     setLoading(true);
 
     try {
+      console.log('Itens do carrinho:', items);
+      
+      // Primeiro, vamos buscar os IDs reais dos menu items baseado no nome
+      const menuItemPromises = items.map(item => 
+        supabase
+          .from('menu_items')
+          .select('id, name, price')
+          .eq('name', item.name)
+          .single()
+      );
+      
+      const menuItemResults = await Promise.all(menuItemPromises);
+      console.log('Menu items encontrados:', menuItemResults);
+      
+      // Verificar se todos os items foram encontrados
+      const menuItemsData = menuItemResults.map((result, index) => {
+        if (result.error) {
+          console.error(`Erro ao buscar item ${items[index].name}:`, result.error);
+          throw new Error(`Item ${items[index].name} não encontrado no cardápio`);
+        }
+        return result.data;
+      });
+
       // Criar o pedido
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -57,21 +80,31 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Erro ao criar pedido:', orderError);
+        throw orderError;
+      }
 
-      // Criar os itens do pedido
-      const orderItems = items.map(item => ({
+      console.log('Pedido criado:', order);
+
+      // Criar os itens do pedido com os IDs corretos
+      const orderItems = items.map((item, index) => ({
         order_id: order.id,
-        menu_item_id: item.id,
+        menu_item_id: menuItemsData[index].id, // Usar o ID UUID correto
         quantity: item.quantity,
         price: item.price
       }));
+
+      console.log('Itens do pedido a serem inseridos:', orderItems);
 
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Erro ao criar itens do pedido:', itemsError);
+        throw itemsError;
+      }
 
       toast({
         title: "Pedido realizado com sucesso!",

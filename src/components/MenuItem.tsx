@@ -56,13 +56,23 @@ const MenuItem = ({ item, quantity, onAdd, onRemove }: MenuItemProps) => {
               </span>
             )}
             
-            <Button
-              onClick={() => onAdd(item)}
-              size="sm"
-              className="w-8 h-8 p-0 bg-cardapio-orange hover:bg-orange-600 text-white"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+            {quantity === 0 ? (
+              <Button
+                onClick={() => onAdd(item)}
+                size="sm"
+                className="bg-cardapio-orange hover:bg-orange-600 text-white px-4"
+              >
+                Adicionar
+              </Button>
+            ) : (
+              <Button
+                onClick={() => onAdd(item)}
+                size="sm"
+                className="w-8 h-8 p-0 bg-cardapio-orange hover:bg-orange-600 text-white"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            )}
           </div>
           
           {quantity > 0 && (
