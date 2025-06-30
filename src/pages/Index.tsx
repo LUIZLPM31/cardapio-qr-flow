@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import CategoryFilter from "@/components/CategoryFilter";
 import MenuItem, { MenuItemType } from "@/components/MenuItem";
 import Cart from "@/components/Cart";
+import CheckoutForm from "@/components/CheckoutForm";
 import { menuItems, categories } from "@/data/menuData";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +16,7 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredItems = activeCategory === "all" 
@@ -77,14 +79,13 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
-    toast({
-      title: "Pedido em processamento!",
-      description: "Redirecionando para pagamento...",
-      duration: 3000,
-    });
-    
-    // Aqui seria implementado o fluxo de pagamento
-    console.log("Processando pedido:", cartItems);
+    setIsCartOpen(false);
+    setIsCheckoutOpen(true);
+  };
+
+  const handleOrderComplete = () => {
+    setCartItems([]);
+    setIsCheckoutOpen(false);
   };
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -140,6 +141,13 @@ const Index = () => {
         items={cartItems}
         onUpdateQuantity={updateCartQuantity}
         onCheckout={handleCheckout}
+      />
+
+      <CheckoutForm
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={cartItems}
+        onOrderComplete={handleOrderComplete}
       />
 
       {cartItemCount > 0 && !isCartOpen && (
