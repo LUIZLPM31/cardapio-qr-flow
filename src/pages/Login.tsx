@@ -29,30 +29,14 @@ const Login = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Check if user is admin
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profile?.role === 'admin') {
-          toast({
-            title: "Login realizado com sucesso",
-            description: "Bem-vindo ao painel administrativo!",
-          });
-          navigate('/admin');
-        } else {
-          // Sign out if not admin
-          await supabase.auth.signOut();
-          toast({
-            title: "Acesso negado",
-            description: "Você não tem permissão para acessar o painel administrativo.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Bem-vindo ao sistema!",
+        });
+        navigate('/admin');
       }
     } catch (error: any) {
+      console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
         description: error.message || "Ocorreu um erro ao fazer login.",
@@ -83,33 +67,10 @@ const Login = () => {
           title: "Conta criada com sucesso",
           description: "Verifique seu email para confirmar a conta.",
         });
-        
-        // If this is the admin email, update role immediately
-        if (email === "adm@adm.com") {
-          setTimeout(async () => {
-            try {
-              const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ role: 'admin' })
-                .eq('id', data.user!.id);
-
-              if (updateError) {
-                console.error('Erro ao definir papel de admin:', updateError);
-              } else {
-                toast({
-                  title: "Papel de admin definido",
-                  description: "Você pode fazer login como administrador agora.",
-                });
-              }
-            } catch (err) {
-              console.error('Erro ao atualizar perfil:', err);
-            }
-          }, 2000);
-        }
-        
         setIsSignUp(false);
       }
     } catch (error: any) {
+      console.error('Erro no cadastro:', error);
       toast({
         title: "Erro no cadastro",
         description: error.message || "Ocorreu um erro ao criar a conta.",
@@ -132,10 +93,10 @@ const Login = () => {
             />
           </div>
           <CardTitle className="text-2xl font-bold text-cardapio-text">
-            {isSignUp ? 'Criar Conta Admin' : 'Login Administrativo'}
+            {isSignUp ? 'Criar Conta' : 'Login'}
           </CardTitle>
           <p className="text-gray-600">
-            {isSignUp ? 'Crie sua conta de administrador' : 'Acesse o painel de controle do CardápioGO'}
+            {isSignUp ? 'Crie sua conta' : 'Acesse o sistema do CardápioGO'}
           </p>
         </CardHeader>
         <CardContent>
@@ -145,7 +106,7 @@ const Login = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="adm@adm.com"
+                placeholder="email@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -156,7 +117,7 @@ const Login = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="1234"
+                placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -177,7 +138,7 @@ const Login = () => {
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-cardapio-green"
               >
-                {isSignUp ? "Já tem conta? Fazer login" : "Primeira vez? Criar conta admin"}
+                {isSignUp ? "Já tem conta? Fazer login" : "Não tem conta? Criar conta"}
               </Button>
             </div>
           </form>
