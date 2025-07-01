@@ -1,7 +1,8 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,22 +10,53 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
-  const { user, isAdmin, loading } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
+    // Verificar sessão atual
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Sessão atual:', session);
+        
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          console.log('Nenhuma sessão encontrada, redirecionando para login');
+          navigate('/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error);
         navigate('/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      if (requireAdmin && !isAdmin) {
-        navigate('/login');
-        return;
+    };
+
+    checkAuth();
+
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session);
+        
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+          if (event === 'SIGNED_OUT') {
+            navigate('/login');
+          }
+        }
+        setLoading(false);
       }
-    }
-  }, [user, isAdmin, loading, navigate, requireAdmin]);
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate, requireAdmin]);
 
   if (loading) {
     return (
@@ -34,7 +66,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     );
   }
 
-  if (!user || (requireAdmin && !isAdmin)) {
+  if (!user) {
     return null;
   }
 

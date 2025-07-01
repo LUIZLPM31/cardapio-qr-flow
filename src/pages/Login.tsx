@@ -21,19 +21,28 @@ const Login = () => {
     setLoading(true);
 
     try {
+      console.log('Tentando fazer login com:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      console.log('Resposta do login:', { data, error });
+
+      if (error) {
+        throw error;
+      }
 
       if (data.user) {
+        console.log('Login bem-sucedido, redirecionando...');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao sistema!",
         });
-        navigate('/admin');
+        
+        // Redirecionar diretamente sem verificações complexas
+        window.location.href = '/admin';
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
