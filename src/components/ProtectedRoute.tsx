@@ -15,49 +15,56 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar sessão atual primeiro
+    let mounted = true;
+
     const checkAuth = async () => {
-      console.log('ProtectedRoute: Verificando autenticação...');
-      
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('ProtectedRoute: Sessão encontrada:', session);
+        
+        if (!mounted) return;
         
         if (session?.user) {
-          console.log('ProtectedRoute: Usuário autenticado:', session.user.email);
+          console.log('ProtectedRoute: Usuário autenticado');
           setUser(session.user);
         } else {
-          console.log('ProtectedRoute: Nenhuma sessão, redirecionando para login');
+          console.log('ProtectedRoute: Sem autenticação, redirecionando');
           navigate('/login', { replace: true });
         }
       } catch (error) {
-        console.error('ProtectedRoute: Erro ao verificar autenticação:', error);
-        navigate('/login', { replace: true });
+        console.error('ProtectedRoute: Erro:', error);
+        if (mounted) {
+          navigate('/login', { replace: true });
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkAuth();
 
-    // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('ProtectedRoute: Auth state mudou:', event, session);
+        if (!mounted) return;
+        
+        console.log('ProtectedRoute: Auth mudou:', event);
         
         if (session?.user) {
-          console.log('ProtectedRoute: Usuário logado via state change');
           setUser(session.user);
+          setLoading(false);
         } else {
-          console.log('ProtectedRoute: Usuário deslogado via state change');
           setUser(null);
+          setLoading(false);
           navigate('/login', { replace: true });
         }
-        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   if (loading) {

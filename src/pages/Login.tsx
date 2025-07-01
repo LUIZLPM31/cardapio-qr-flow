@@ -16,50 +16,42 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Verificar se já está logado
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        navigate('/admin');
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log('Tentando fazer login com:', email);
+      console.log('Iniciando login para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('Resposta do login:', { data, error });
+      console.log('Resultado do login:', { data, error });
 
       if (error) {
+        console.error('Erro de autenticação:', error);
         throw error;
       }
 
       if (data.user) {
-        console.log('Login bem-sucedido, redirecionando...');
+        console.log('Login bem-sucedido para:', data.user.email);
         toast({
           title: "Login realizado com sucesso",
-          description: "Bem-vindo ao sistema!",
+          description: "Redirecionando...",
         });
         
-        // Usar navigate em vez de window.location.href
-        navigate('/admin');
+        // Aguardar um pouco para o toast aparecer e depois redirecionar
+        setTimeout(() => {
+          navigate('/admin', { replace: true });
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
-        description: error.message || "Ocorreu um erro ao fazer login.",
+        description: error.message || "Verifique suas credenciais.",
         variant: "destructive",
       });
     } finally {
@@ -130,6 +122,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -141,6 +134,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
             <Button
@@ -157,6 +151,7 @@ const Login = () => {
                 variant="link"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-cardapio-green"
+                disabled={loading}
               >
                 {isSignUp ? "Já tem conta? Fazer login" : "Não tem conta? Criar conta"}
               </Button>
