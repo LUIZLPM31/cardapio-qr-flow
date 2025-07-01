@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, CheckCircle, X } from "lucide-react";
+import { Copy, CheckCircle, X, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PixPaymentProps {
