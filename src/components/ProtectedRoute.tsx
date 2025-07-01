@@ -15,22 +15,24 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar sessão atual
+    // Verificar sessão atual primeiro
     const checkAuth = async () => {
+      console.log('ProtectedRoute: Verificando autenticação...');
+      
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Sessão atual:', session);
+        console.log('ProtectedRoute: Sessão encontrada:', session);
         
         if (session?.user) {
+          console.log('ProtectedRoute: Usuário autenticado:', session.user.email);
           setUser(session.user);
         } else {
-          console.log('Nenhuma sessão encontrada, redirecionando para login');
-          navigate('/login');
-          return;
+          console.log('ProtectedRoute: Nenhuma sessão, redirecionando para login');
+          navigate('/login', { replace: true });
         }
       } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
-        navigate('/login');
+        console.error('ProtectedRoute: Erro ao verificar autenticação:', error);
+        navigate('/login', { replace: true });
       } finally {
         setLoading(false);
       }
@@ -41,22 +43,22 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session);
+        console.log('ProtectedRoute: Auth state mudou:', event, session);
         
         if (session?.user) {
+          console.log('ProtectedRoute: Usuário logado via state change');
           setUser(session.user);
         } else {
+          console.log('ProtectedRoute: Usuário deslogado via state change');
           setUser(null);
-          if (event === 'SIGNED_OUT') {
-            navigate('/login');
-          }
+          navigate('/login', { replace: true });
         }
         setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate, requireAdmin]);
+  }, [navigate]);
 
   if (loading) {
     return (

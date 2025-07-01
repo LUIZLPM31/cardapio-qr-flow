@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,17 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Verificar se já está logado
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        navigate('/admin');
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +52,8 @@ const Login = () => {
           description: "Bem-vindo ao sistema!",
         });
         
-        // Redirecionar diretamente sem verificações complexas
-        window.location.href = '/admin';
+        // Usar navigate em vez de window.location.href
+        navigate('/admin');
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
