@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, CheckCircle, X, Smartphone } from "lucide-react";
+import { Copy, CheckCircle, X, Smartphone, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PixPaymentProps {
@@ -20,6 +21,9 @@ const PixPayment = ({ isOpen, onClose, total, customerName, onPaymentConfirmed }
   const pixCode = `00020126360014BR.GOV.BCB.PIX0114+55119999999990204531653040000530398654${total.toFixed(2).replace('.', '')}5802BR5925${customerName.toUpperCase()}6014SAO PAULO62070503***6304`;
   
   const pixKey = "pix@restaurante.com.br";
+
+  // Gerar QR code usando uma API pública
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`;
 
   const copyPixCode = () => {
     navigator.clipboard.writeText(pixCode);
@@ -62,6 +66,28 @@ const PixPayment = ({ isOpen, onClose, total, customerName, onPaymentConfirmed }
             </div>
             <p className="text-gray-600">
               Pedido para: {customerName}
+            </p>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-semibold mb-3 flex items-center justify-center">
+              <QrCode className="w-5 h-5 mr-2" />
+              QR Code PIX
+            </h3>
+            <div className="flex justify-center mb-3">
+              <div className="bg-white p-3 rounded-lg border">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code PIX" 
+                  className="w-48 h-48"
+                  onError={(e) => {
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNTBMMTUwIDEwMEwxMDAgMTUwTDUwIDEwMEwxMDAgNTBaIiBzdHJva2U9IiM2QjdCODQiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPgo8L3N2Zz4K';
+                  }}
+                />
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 text-center">
+              Escaneie o QR Code com seu app de banco
             </p>
           </div>
 
@@ -111,10 +137,11 @@ const PixPayment = ({ isOpen, onClose, total, customerName, onPaymentConfirmed }
           <div className="bg-blue-50 p-4 rounded-lg">
             <h4 className="font-medium text-blue-800 mb-2">Como pagar:</h4>
             <ol className="text-sm text-blue-700 space-y-1">
-              <li>1. Abra seu app de banco</li>
-              <li>2. Escolha PIX</li>
-              <li>3. Cole o código ou use a chave PIX</li>
-              <li>4. Confirme o pagamento</li>
+              <li>1. Escaneie o QR Code com seu app de banco, OU</li>
+              <li>2. Abra seu app de banco</li>
+              <li>3. Escolha PIX</li>
+              <li>4. Cole o código ou use a chave PIX</li>
+              <li>5. Confirme o pagamento</li>
             </ol>
           </div>
 
