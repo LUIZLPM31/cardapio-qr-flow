@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +68,63 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
       console.log('Forma de pagamento:', paymentMethod);
       console.log('Itens do pedido:', items);
 
+      // Primeiro, buscar ou criar os itens do menu no banco de dados
+      const menuItemsToCreate = [];
+      const existingMenuItems = [];
+
+      for (const item of items) {
+        // Tentar buscar o item no banco
+        const { data: existingItem } = await supabase
+          .from('menu_items')
+          .select('id')
+          .eq('name', item.name)
+          .single();
+
+        if (existingItem) {
+          existingMenuItems.push({
+            ...item,
+            menu_item_id: existingItem.id
+          });
+        } else {
+          // Se não existir, preparar para criar
+          menuItemsToCreate.push({
+            name: item.name,
+            price: item.price,
+            description: `Delicioso ${item.name}`,
+            is_available: true
+          });
+        }
+      }
+
+      // Criar os itens que não existem
+      let createdMenuItems = [];
+      if (menuItemsToCreate.length > 0) {
+        const { data: newItems, error: createError } = await supabase
+          .from('menu_items')
+          .insert(menuItemsToCreate)
+          .select('id, name');
+
+        if (createError) {
+          console.error('Erro ao criar itens do menu:', createError);
+          throw createError;
+        }
+
+        createdMenuItems = newItems || [];
+      }
+
+      // Mapear todos os itens com seus IDs corretos
+      const allMenuItems = [
+        ...existingMenuItems,
+        ...items.filter(item => 
+          menuItemsToCreate.some(created => created.name === item.name)
+        ).map((item, index) => ({
+          ...item,
+          menu_item_id: createdMenuItems[index]?.id
+        }))
+      ];
+
+      console.log('Itens do menu processados:', allMenuItems);
+
       // Criar o pedido no Supabase
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -88,10 +144,10 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
 
       console.log('Pedido criado:', order);
 
-      // Criar os itens do pedido
-      const orderItems = items.map(item => ({
+      // Criar os itens do pedido com UUIDs válidos
+      const orderItems = allMenuItems.map(item => ({
         order_id: order.id,
-        menu_item_id: item.id,
+        menu_item_id: item.menu_item_id,
         quantity: item.quantity,
         price: item.price
       }));
