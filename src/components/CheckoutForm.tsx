@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { X, CreditCard, Banknote, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import PixPayment from "./PixPayment";
 
 interface CartItem {
@@ -67,8 +69,43 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
       console.log('Forma de pagamento:', paymentMethod);
       console.log('Itens do pedido:', items);
 
-      // Simular o processo de pedido
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Criar o pedido no Supabase
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_name: customerName,
+          customer_phone: customerPhone || null,
+          total: total,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Erro ao criar pedido:', orderError);
+        throw orderError;
+      }
+
+      console.log('Pedido criado:', order);
+
+      // Criar os itens do pedido
+      const orderItems = items.map(item => ({
+        order_id: order.id,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        price: item.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) {
+        console.error('Erro ao criar itens do pedido:', itemsError);
+        throw itemsError;
+      }
+
+      console.log('Itens do pedido criados com sucesso');
 
       if (paymentMethod === "pix") {
         // Para PIX, mostrar tela de pagamento
@@ -107,7 +144,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
     }
   };
 
-  const handlePixPaymentConfirmed = () => {
+  const handlePixPaymentConfirmed = async () => {
     toast({
       title: "Pedido confirmado!",
       description: `Pedido para ${customerName} via PIX foi enviado para a cozinha`,
