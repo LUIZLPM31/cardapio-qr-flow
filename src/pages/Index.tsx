@@ -5,6 +5,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 import MenuItem, { MenuItemType } from "@/components/MenuItem";
 import Cart from "@/components/Cart";
 import CheckoutForm from "@/components/CheckoutForm";
+import Footer from "@/components/Footer";
 import { menuItems, categories } from "@/data/menuData";
 import { useToast } from "@/hooks/use-toast";
 
@@ -91,7 +92,7 @@ const Index = () => {
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header 
         cartItemCount={cartItemCount}
         onCartClick={() => setIsCartOpen(true)}
@@ -103,18 +104,18 @@ const Index = () => {
         onCategoryChange={setActiveCategory}
       />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold text-cardapio-text mb-2">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-cardapio-text mb-2">
             {activeCategory === "all" ? "Nosso Cardápio" : 
              categories.find(cat => cat.id === activeCategory)?.name}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm sm:text-base">
             Escolha seus pratos favoritos e monte seu pedido
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {filteredItems.map((item) => (
             <MenuItem
               key={item.id}
@@ -128,12 +129,14 @@ const Index = () => {
 
         {filteredItems.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
+            <p className="text-gray-500 text-base sm:text-lg">
               Nenhum item encontrado nesta categoria.
             </p>
           </div>
         )}
       </main>
+
+      <Footer />
 
       <Cart
         isOpen={isCartOpen}
@@ -153,11 +156,11 @@ const Index = () => {
       {cartItemCount > 0 && !isCartOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-6 right-6 bg-cardapio-orange hover:bg-orange-600 text-white rounded-full p-4 shadow-lg z-40 animate-scale-in"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-cardapio-orange hover:bg-orange-600 text-white rounded-full p-3 sm:p-4 shadow-lg z-40 animate-scale-in"
         >
           <div className="flex items-center space-x-2">
-            <span className="font-bold">{cartItemCount}</span>
-            <span className="hidden sm:inline">itens</span>
+            <span className="font-bold text-sm sm:text-base">{cartItemCount}</span>
+            <span className="hidden sm:inline text-sm">itens</span>
           </div>
         </button>
       )}
