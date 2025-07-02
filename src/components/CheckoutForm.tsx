@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { X, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { X, CreditCard, Banknote, Smartphone, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import PixPayment from "./PixPayment";
@@ -32,11 +32,72 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [changeFor, setChangeFor] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
   const { toast } = useToast();
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const discount = appliedCoupon ? (subtotal * appliedCoupon.discount_percentage / 100) : 0;
+  const total = subtotal - discount;
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite um código de cupom",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCouponLoading(true);
+
+    try {
+      const { data: promotion, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('code', couponCode.toUpperCase())
+        .eq('is_active', true)
+        .gte('valid_until', new Date().toISOString().split('T')[0])
+        .single();
+
+      if (error || !promotion) {
+        toast({
+          title: "Cupom inválido",
+          description: "Cupom não encontrado ou expirado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAppliedCoupon(promotion);
+      toast({
+        title: "Cupom aplicado!",
+        description: `Desconto de ${promotion.discount_percentage}% aplicado`,
+      });
+    } catch (error) {
+      console.error('Erro ao validar cupom:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível validar o cupom",
+        variant: "destructive",
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    toast({
+      title: "Cupom removido",
+      description: "O desconto foi removido do pedido",
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +128,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
       console.log('Criando pedido para:', customerName);
       console.log('Forma de pagamento:', paymentMethod);
       console.log('Itens do pedido:', items);
+      console.log('Cupom aplicado:', appliedCoupon);
 
       // Primeiro, buscar ou criar os itens do menu no banco de dados
       const menuItemsToCreate = [];
@@ -181,9 +243,14 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
           break;
       }
 
+      let successMessage = `Pedido para ${customerName} via ${paymentMethodText} foi enviado para a cozinha`;
+      if (appliedCoupon) {
+        successMessage += ` com desconto de ${appliedCoupon.discount_percentage}%`;
+      }
+
       toast({
         title: "Pedido realizado com sucesso!",
-        description: `Pedido para ${customerName} via ${paymentMethodText} foi enviado para a cozinha`,
+        description: successMessage,
       });
 
       onOrderComplete();
@@ -201,9 +268,14 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
   };
 
   const handlePixPaymentConfirmed = async () => {
+    let successMessage = `Pedido para ${customerName} via PIX foi enviado para a cozinha`;
+    if (appliedCoupon) {
+      successMessage += ` com desconto de ${appliedCoupon.discount_percentage}%`;
+    }
+
     toast({
       title: "Pedido confirmado!",
-      description: `Pedido para ${customerName} via PIX foi enviado para a cozinha`,
+      description: successMessage,
     });
     
     setShowPixPayment(false);
@@ -255,6 +327,47 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="(00) 00000-0000"
                 />
+              </div>
+
+              <div className="border-t pt-4">
+                <Label>Cupom de Desconto</Label>
+                <div className="flex space-x-2 mt-2">
+                  <Input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Digite o código do cupom"
+                    disabled={appliedCoupon}
+                  />
+                  {!appliedCoupon ? (
+                    <Button
+                      type="button"
+                      onClick={validateCoupon}
+                      disabled={couponLoading}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Tag className="w-4 h-4 mr-1" />
+                      {couponLoading ? "..." : "Aplicar"}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={removeCoupon}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                {appliedCoupon && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-700 font-medium">
+                      Cupom "{appliedCoupon.code}" aplicado - {appliedCoupon.discount_percentage}% de desconto
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -373,9 +486,21 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                     </div>
                   ))}
                 </div>
-                <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                  <span>Total:</span>
-                  <span>R$ {total.toFixed(2)}</span>
+                <div className="border-t mt-2 pt-2 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span>R$ {subtotal.toFixed(2)}</span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Desconto ({appliedCoupon.discount_percentage}%):</span>
+                      <span>-R$ {discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold">
+                    <span>Total:</span>
+                    <span>R$ {total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
