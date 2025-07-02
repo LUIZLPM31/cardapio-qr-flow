@@ -13,7 +13,7 @@ const Footer = () => {
           <div className="flex flex-col items-center md:items-end space-y-4 px-[23px] mx-0 my-[11px] py-0">
             <div className="flex items-center space-x-2">
               <Phone className="w-4 h-4" />
-              <a href="tel:+5511999999999" className="hover:text-cardapio-orange transition-colors">(51</a>
+              <a href="tel:+5511999999999" className="hover:text-cardapio-orange transition-colors">(51) 981580205</a>
             </div>
 
             {/* Redes Sociais */}
