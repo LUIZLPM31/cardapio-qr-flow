@@ -44,7 +44,10 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
   const total = subtotal - discount;
 
   const validateCoupon = async () => {
+    console.log('validateCoupon chamado - início');
+    
     if (!couponCode.trim()) {
+      console.log('Cupom vazio');
       toast({
         title: "Erro",
         description: "Por favor, digite um código de cupom",
@@ -53,10 +56,11 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
       return;
     }
 
+    console.log('Iniciando validação do cupom:', couponCode);
     setCouponLoading(true);
 
     try {
-      console.log('Validando cupom:', couponCode);
+      console.log('Fazendo consulta ao Supabase para cupom:', couponCode);
       
       const { data: promotion, error } = await supabase
         .from('promotions')
@@ -64,40 +68,51 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
         .eq('code', couponCode.toUpperCase())
         .eq('is_active', true)
         .gte('valid_until', new Date().toISOString().split('T')[0])
-        .single();
+        .maybeSingle();
 
-      console.log('Resultado da busca do cupom:', { promotion, error });
+      console.log('Resposta do Supabase:', { promotion, error });
 
-      if (error || !promotion) {
-        console.error('Cupom não encontrado:', error);
+      if (error) {
+        console.error('Erro na consulta:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao validar cupom. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!promotion) {
+        console.log('Cupom não encontrado ou inválido');
         toast({
           title: "Cupom inválido",
           description: "Cupom não encontrado ou expirado",
           variant: "destructive",
         });
-        setCouponLoading(false);
         return;
       }
 
-      console.log('Cupom válido encontrado:', promotion);
+      console.log('Cupom válido encontrado, aplicando:', promotion);
       setAppliedCoupon(promotion);
       toast({
         title: "Cupom aplicado!",
         description: `Desconto de ${promotion.discount_percentage}% aplicado`,
       });
     } catch (error) {
-      console.error('Erro ao validar cupom:', error);
+      console.error('Erro na validação do cupom:', error);
       toast({
         title: "Erro",
         description: "Não foi possível validar o cupom",
         variant: "destructive",
       });
     } finally {
+      console.log('Finalizando validação do cupom');
       setCouponLoading(false);
     }
   };
 
   const removeCoupon = () => {
+    console.log('Removendo cupom');
     setAppliedCoupon(null);
     setCouponCode("");
     toast({
@@ -296,6 +311,8 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
 
   if (!isOpen) return null;
 
+  console.log('Renderizando CheckoutForm, appliedCoupon:', appliedCoupon);
+
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2">
@@ -312,7 +329,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
             </Button>
           </CardHeader>
           
-          <CardContent className="px-6 space-y-4">
+          <CardContent className="px-4 sm:px-6 space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="name">Nome *</Label>
@@ -340,15 +357,15 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
               </div>
 
               <div className="border-t pt-4">
-                <Label>Cupom de Desconto</Label>
+                <Label className="text-sm font-medium">Cupom de Desconto</Label>
                 <div className="flex gap-2 mt-2">
                   <Input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                     placeholder="Digite o código"
-                    disabled={appliedCoupon}
-                    className="flex-1"
+                    disabled={!!appliedCoupon}
+                    className="flex-1 text-sm"
                   />
                   {!appliedCoupon ? (
                     <Button
@@ -357,7 +374,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                       disabled={couponLoading}
                       variant="outline"
                       size="sm"
-                      className="px-3 shrink-0"
+                      className="px-2 sm:px-3 shrink-0 text-xs sm:text-sm"
                     >
                       <Tag className="w-4 h-4 mr-1" />
                       {couponLoading ? "..." : "Aplicar"}
@@ -368,7 +385,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                       onClick={removeCoupon}
                       variant="destructive"
                       size="sm"
-                      className="px-3 shrink-0"
+                      className="px-2 sm:px-3 shrink-0"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -384,25 +401,25 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
               </div>
 
               <div>
-                <Label>Forma de Pagamento *</Label>
+                <Label className="text-sm font-medium">Forma de Pagamento *</Label>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="mt-2">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center space-x-2 cursor-pointer">
+                    <Label htmlFor="pix" className="flex items-center space-x-2 cursor-pointer text-sm">
                       <Smartphone className="w-4 h-4" />
                       <span>PIX</span>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="card" id="card" />
-                    <Label htmlFor="card" className="flex items-center space-x-2 cursor-pointer">
+                    <Label htmlFor="card" className="flex items-center space-x-2 cursor-pointer text-sm">
                       <CreditCard className="w-4 h-4" />
                       <span>Cartão de Crédito</span>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="flex items-center space-x-2 cursor-pointer">
+                    <Label htmlFor="cash" className="flex items-center space-x-2 cursor-pointer text-sm">
                       <Banknote className="w-4 h-4" />
                       <span>Dinheiro</span>
                     </Label>
@@ -412,9 +429,9 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
 
               {paymentMethod === "card" && (
                 <div className="space-y-3 border-t pt-4">
-                  <h4 className="font-medium">Dados do Cartão</h4>
+                  <h4 className="font-medium text-sm">Dados do Cartão</h4>
                   <div>
-                    <Label htmlFor="cardNumber">Número do Cartão *</Label>
+                    <Label htmlFor="cardNumber" className="text-sm">Número do Cartão *</Label>
                     <Input
                       id="cardNumber"
                       type="text"
@@ -426,7 +443,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cardName">Nome no Cartão *</Label>
+                    <Label htmlFor="cardName" className="text-sm">Nome no Cartão *</Label>
                     <Input
                       id="cardName"
                       type="text"
@@ -438,7 +455,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label htmlFor="cardExpiry">Validade *</Label>
+                      <Label htmlFor="cardExpiry" className="text-sm">Validade *</Label>
                       <Input
                         id="cardExpiry"
                         type="text"
@@ -450,7 +467,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cardCvv">CVV *</Label>
+                      <Label htmlFor="cardCvv" className="text-sm">CVV *</Label>
                       <Input
                         id="cardCvv"
                         type="text"
@@ -467,7 +484,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
 
               {paymentMethod === "cash" && (
                 <div className="border-t pt-4">
-                  <Label htmlFor="changeFor">Troco para (opcional)</Label>
+                  <Label htmlFor="changeFor" className="text-sm">Troco para (opcional)</Label>
                   <Input
                     id="changeFor"
                     type="number"
@@ -495,12 +512,12 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
               )}
 
               <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Resumo do Pedido:</h4>
+                <h4 className="font-medium mb-2 text-sm">Resumo do Pedido:</h4>
                 <div className="space-y-1 text-sm text-gray-600">
                   {items.map((item) => (
                     <div key={item.id} className="flex justify-between">
-                      <span>{item.quantity}x {item.name}</span>
-                      <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="text-xs sm:text-sm">{item.quantity}x {item.name}</span>
+                      <span className="text-xs sm:text-sm">R$ {(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -524,7 +541,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
 
               <Button
                 type="submit"
-                className="w-full bg-cardapio-orange hover:bg-orange-600"
+                className="w-full bg-cardapio-orange hover:bg-orange-600 text-sm"
                 disabled={loading}
               >
                 {loading ? "Processando..." : "Confirmar Pedido"}
