@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,12 +42,24 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
   const [showPixPayment, setShowPixPayment] = useState(false);
   const { toast } = useToast();
 
+  // Cálculos seguros
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discount = appliedCoupon ? (subtotal * appliedCoupon.discount_percentage / 100) : 0;
-  const total = subtotal - discount;
+  const discount = appliedCoupon && appliedCoupon.discount_percentage 
+    ? (subtotal * appliedCoupon.discount_percentage / 100) 
+    : 0;
+  const total = Math.max(0, subtotal - discount);
+
+  console.log('CheckoutForm renderizando:', { 
+    subtotal, 
+    discount, 
+    total, 
+    appliedCoupon,
+    isOpen 
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleSubmit iniciado');
     
     if (!customerName.trim()) {
       toast({
@@ -71,6 +82,7 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
     }
 
     setLoading(true);
+    console.log('Iniciando processamento do pedido');
 
     try {
       console.log('Criando pedido para:', customerName);
@@ -236,8 +248,6 @@ const CheckoutForm = ({ isOpen, onClose, items, onOrderComplete }: CheckoutFormP
   };
 
   if (!isOpen) return null;
-
-  console.log('Renderizando CheckoutForm, appliedCoupon:', appliedCoupon);
 
   return (
     <>
