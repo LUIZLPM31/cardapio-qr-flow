@@ -17,11 +17,23 @@ interface MenuItemProps {
   quantity: number;
   onAdd: (item: MenuItemType) => void;
   onRemove: (itemId: string) => void;
+  onItemClick: (item: MenuItemType) => void;
 }
 
-const MenuItem = ({ item, quantity, onAdd, onRemove }: MenuItemProps) => {
+const MenuItem = ({ item, quantity, onAdd, onRemove, onItemClick }: MenuItemProps) => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger modal if clicking on buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    onItemClick(item);
+  };
+
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in">
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="aspect-video relative overflow-hidden">
         <img
           src={item.image}
@@ -41,7 +53,10 @@ const MenuItem = ({ item, quantity, onAdd, onRemove }: MenuItemProps) => {
           <div className="flex items-center space-x-2">
             {quantity > 0 && (
               <Button
-                onClick={() => onRemove(item.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(item.id);
+                }}
                 size="sm"
                 variant="outline"
                 className="w-8 h-8 p-0 border-cardapio-orange text-cardapio-orange hover:bg-cardapio-orange hover:text-white"
@@ -58,7 +73,10 @@ const MenuItem = ({ item, quantity, onAdd, onRemove }: MenuItemProps) => {
             
             {quantity === 0 ? (
               <Button
-                onClick={() => onAdd(item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAdd(item);
+                }}
                 size="sm"
                 className="bg-cardapio-orange hover:bg-orange-600 text-white px-4"
               >
@@ -66,7 +84,10 @@ const MenuItem = ({ item, quantity, onAdd, onRemove }: MenuItemProps) => {
               </Button>
             ) : (
               <Button
-                onClick={() => onAdd(item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAdd(item);
+                }}
                 size="sm"
                 className="w-8 h-8 p-0 bg-cardapio-orange hover:bg-orange-600 text-white"
               >

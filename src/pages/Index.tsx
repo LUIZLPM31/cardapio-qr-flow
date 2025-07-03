@@ -5,6 +5,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 import MenuItem, { MenuItemType } from "@/components/MenuItem";
 import Cart from "@/components/Cart";
 import CheckoutForm from "@/components/CheckoutForm";
+import ProductDetailsModal from "@/components/ProductDetailsModal";
 import Footer from "@/components/Footer";
 import { menuItems, categories } from "@/data/menuData";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +19,8 @@ const Index = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<MenuItemType | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredItems = activeCategory === "all" 
@@ -89,6 +92,11 @@ const Index = () => {
     setIsCheckoutOpen(false);
   };
 
+  const handleProductClick = (item: MenuItemType) => {
+    setSelectedProduct(item);
+    setIsProductModalOpen(true);
+  };
+
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   return (
@@ -123,6 +131,7 @@ const Index = () => {
               quantity={getItemQuantity(item.id)}
               onAdd={addToCart}
               onRemove={removeFromCart}
+              onItemClick={handleProductClick}
             />
           ))}
         </div>
@@ -151,6 +160,15 @@ const Index = () => {
         onClose={() => setIsCheckoutOpen(false)}
         items={cartItems}
         onOrderComplete={handleOrderComplete}
+      />
+
+      <ProductDetailsModal
+        item={selectedProduct}
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        quantity={selectedProduct ? getItemQuantity(selectedProduct.id) : 0}
+        onAdd={addToCart}
+        onRemove={removeFromCart}
       />
 
       {cartItemCount > 0 && !isCartOpen && (
